@@ -523,7 +523,7 @@ public:
 
 protected:
   /// Parent grid pointer
-  GridT* const gp_;
+  GridT* gp_;
 
   /// View-relative index
   Indices pt_;
