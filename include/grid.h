@@ -1115,11 +1115,11 @@ template<typename Derived,
          typename SizeT = typename ContainerT::size_type,
          typename IteratorT = typename ContainerT::iterator,
          typename ConstIteratorT = typename ContainerT::const_iterator>
-class ContainerStorageBase
+class ContainerAccessBase
 {
 public:
   template<typename... Args>
-  explicit ContainerStorageBase(Args&&... args) :
+  explicit ContainerAccessBase(Args&&... args) :
     data_{std::forward<Args>(args)...}
   {}
 
@@ -1170,14 +1170,14 @@ private:
 
 
 template<typename Derived, typename PtrT>
-class RawStorageBase
+class RawAccessBase
 {
   static_assert(
     std::is_pointer_v<PtrT>,
-    "RawStorageBase: expecting PtrT to be a pointer type"
+    "RawAccessBase: expecting PtrT to be a pointer type"
   );
 public:
-  explicit RawStorageBase(PtrT data) :
+  explicit RawAccessBase(PtrT data) :
     data_{data}
   {}
 
@@ -1231,10 +1231,10 @@ template<typename CellT, typename AllocatorT = std::allocator<CellT>>
 class Grid :
   public ResizableExtentsBase,
   public GridBase<Grid<CellT, AllocatorT>, CellT>,
-  public RawStorageBase<Grid<CellT, AllocatorT>, CellT*>
+  public RawAccessBase<Grid<CellT, AllocatorT>, CellT*>
 {
   using GBase = GridBase<Grid, CellT>;
-  using StorageBase = RawStorageBase<Grid<CellT, AllocatorT>, CellT*>;
+  using StorageBase = RawAccessBase<Grid<CellT, AllocatorT>, CellT*>;
 public:
   using GBase::operator=;
 
@@ -1307,10 +1307,10 @@ template<typename CellT>
 class MappedGrid :
   public ResizableExtentsBase,
   public GridBase<MappedGrid<CellT>, CellT>,
-  public RawStorageBase<MappedGrid<CellT>, CellT*>
+  public RawAccessBase<MappedGrid<CellT>, CellT*>
 {
   using GBase = GridBase<MappedGrid, CellT>;
-  using StorageBase = RawStorageBase<MappedGrid, CellT*>;
+  using StorageBase = RawAccessBase<MappedGrid, CellT*>;
 public:
   using GBase::operator=;
 
@@ -1338,10 +1338,10 @@ template<typename CellT, int Height, int Width>
 class FixedGrid :
   public FixedExtentsBase<Height, Width>,
   public GridBase<FixedGrid<CellT, Height, Width>, CellT>,
-  public ContainerStorageBase<FixedGrid<CellT, Height, Width>, std::array<CellT, Height * Width>>
+  public ContainerAccessBase<FixedGrid<CellT, Height, Width>, std::array<CellT, Height * Width>>
 {
   using GBase = GridBase<FixedGrid, CellT>;
-  using StorageBase = ContainerStorageBase<FixedGrid<CellT, Height, Width>, std::array<CellT, Height * Width>>;
+  using StorageBase = ContainerAccessBase<FixedGrid<CellT, Height, Width>, std::array<CellT, Height * Width>>;
 public:
   using GBase::operator=;
 
@@ -1358,10 +1358,10 @@ template<typename CellT, int Height, int Width>
 class MappedFixedGrid :
   public FixedExtentsBase<Height, Width>,
   public GridBase<MappedFixedGrid<CellT, Height, Width>, CellT>,
-  public RawStorageBase<MappedFixedGrid<CellT, Height, Width>, CellT*>
+  public RawAccessBase<MappedFixedGrid<CellT, Height, Width>, CellT*>
 {
   using GBase = GridBase<MappedFixedGrid, CellT>;
-  using StorageBase = RawStorageBase<MappedFixedGrid, CellT*>;
+  using StorageBase = RawAccessBase<MappedFixedGrid, CellT*>;
 public:
   using GBase::operator=;
 
