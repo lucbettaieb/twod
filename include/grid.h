@@ -1005,7 +1005,6 @@ private:
 
 template<typename Derived, typename CellT, int Height, int Width>
 class FixedExtentsView :
-  public FixedExtentsBase<Height, Width>,
   public GridBase<FixedExtentsView<Derived, CellT, Height, Width>, CellT>
 {
   using GBase = GridBase<FixedExtentsView, CellT>;
@@ -1059,7 +1058,6 @@ private:
 
 template<typename Derived, typename CellT, int OriginX, int OriginY, int Height, int Width>
 class FixedOriginExtentsView :
-  public FixedExtentsBase<Height, Width>,
   public GridBase<FixedOriginExtentsView<Derived, CellT, OriginX, OriginY, Height, Width>, CellT>
 {
   using GBase = GridBase<FixedOriginExtentsView, CellT>;
