@@ -4,6 +4,7 @@
  */
 
 // C++ Standard Library
+#include <type_traits>
 #include <vector>
 
 // GTest
@@ -15,6 +16,77 @@
 
 
 using namespace twod;
+
+
+TEST(Bounds, Within)
+{
+  const Bounds bounds{Indices{1, 1}, Extents{5, 5}};
+
+  ASSERT_FALSE(bounds.within(Indices{0, 0}));
+  ASSERT_TRUE(bounds.within(Indices{1, 1}));
+  ASSERT_TRUE(bounds.within(Indices{5, 5}));
+  ASSERT_FALSE(bounds.within(Indices{6, 6}));
+}
+
+
+TEST(Bounds, Overlaps)
+{
+  const Bounds rbounds{Indices{1, 1}, Extents{5, 5}};
+  const Bounds lbounds{Indices{2, 2}, Extents{3, 3}};
+
+  ASSERT_TRUE(rbounds.overlaps(lbounds));
+}
+
+
+TEST(Bounds, OverlapsEdge)
+{
+  const Bounds rbounds{Indices{1, 1}, Extents{1, 1}};
+  const Bounds lbounds{Indices{1, 2}, Extents{3, 3}};
+
+  ASSERT_TRUE(rbounds.overlaps(lbounds));
+}
+
+
+TEST(Bounds, OverlapsCorner)
+{
+  const Bounds rbounds{Indices{1, 1}, Extents{1, 1}};
+  const Bounds lbounds{Indices{2, 2}, Extents{1, 1}};
+
+  ASSERT_TRUE(rbounds.overlaps(lbounds));
+}
+
+
+TEST(FixedExtentsBounds, Within)
+{
+  const FixedExtentsBounds<5, 5> bounds{Indices{1, 1}};
+
+  ASSERT_FALSE(bounds.within(Indices{0, 0}));
+  ASSERT_TRUE(bounds.within(Indices{1, 1}));
+  ASSERT_TRUE(bounds.within(Indices{5, 5}));
+  ASSERT_FALSE(bounds.within(Indices{6, 6}));
+}
+
+
+TEST(FixedOriginBounds, Within)
+{
+  const FixedOriginBounds<1, 1> bounds{Extents{5, 5}};
+
+  ASSERT_FALSE(bounds.within(Indices{0, 0}));
+  ASSERT_TRUE(bounds.within(Indices{1, 1}));
+  ASSERT_TRUE(bounds.within(Indices{5, 5}));
+  ASSERT_FALSE(bounds.within(Indices{6, 6}));
+}
+
+
+TEST(FixedOriginExtentsBounds, Within)
+{
+  const FixedOriginExtentsBounds<1, 1, 5, 5> bounds;
+
+  ASSERT_FALSE(bounds.within(Indices{0, 0}));
+  ASSERT_TRUE(bounds.within(Indices{1, 1}));
+  ASSERT_TRUE(bounds.within(Indices{5, 5}));
+  ASSERT_FALSE(bounds.within(Indices{6, 6}));
+}
 
 
 TEST(Grid, DefaultConstructor)
@@ -48,6 +120,30 @@ TEST(Grid, UniformInitialValueConstructor)
   }
 }
 
+TEST(Grid, Resize)
+{
+  Grid<int> grid{Extents{20, 10}};
+  ASSERT_EQ(grid.extents(), (Extents{20, 10}));
+
+  grid.resize(Extents{20, 20});
+  ASSERT_EQ(grid.extents(), (Extents{20, 20}));
+}
+
+
+TEST(Grid, ResizeValue)
+{
+  Grid<int> grid{Extents{20, 10}, 0};
+  ASSERT_EQ(grid.extents(), (Extents{20, 10}));
+
+  grid.resize(Extents{20, 20}, 1);
+  ASSERT_EQ(grid.extents(), (Extents{20, 20}));
+
+  for (const auto& v : grid)
+  {
+    ASSERT_EQ(v, 1);
+  }
+}
+
 
 TEST(Grid, Within)
 {
@@ -72,316 +168,200 @@ TEST(Grid, NonTrivialCell)
 }
 
 
-TEST(FixedGrid, DefaultConstructor)
+TEST(Grid, ColViewIterator)
 {
-  FixedGrid<int, 20, 10> grid;
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  ASSERT_EQ(grid.extents(), (Extents{20, 10}));
-}
+  ColViewIterator<Grid<int>> itr{grid};
 
-
-TEST(FixedGrid, UniformInitialValueConstructor)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  ASSERT_EQ(grid.extents(), (Extents{20, 10}));
-
-  for (const auto& v : grid)
+  for (ColViewIterator<Grid<int>> itr{grid}; itr != ColViewIterator<Grid<int>>{grid, ViewIteratorEnd{}}; ++itr)
   {
-    ASSERT_EQ(v, 1);
+    *itr = 5;
+  }
+
+  for (ColViewIterator<const Grid<int>> itr{grid}; itr != ColViewIterator<const Grid<int>>{grid, ViewIteratorEnd{}}; ++itr)
+  {
+    ASSERT_EQ(*itr, 5);
   }
 }
 
 
-TEST(FixedGrid, Within)
+TEST(Grid, ColViewIteratorEndTag)
 {
-  const FixedGrid<int, 20, 10> grid{1};
-  ASSERT_TRUE(grid.within(Indices{1, 1}));
+  Grid<int> grid{Extents{20, 10}, 1};
+
+  ColViewIterator<Grid<int>> itr{grid};
+
+  for (ColViewIterator<Grid<int>> itr{grid}; itr != ViewIteratorEnd{}; ++itr)
+  {
+    *itr = 5;
+  }
+
+  for (ColViewIterator<const Grid<int>> itr{grid}; itr != ViewIteratorEnd{}; ++itr)
+  {
+    ASSERT_EQ(*itr, 5);
+  }
 }
 
 
-TEST(FixedGrid, NotWithin)
+TEST(Grid, RowViewIterator)
 {
-  const FixedGrid<int, 20, 10> grid{1};
-  ASSERT_FALSE(grid.within(Indices{21, 11}));
+  Grid<int> grid{Extents{20, 10}, 1};
+
+  RowViewIterator<Grid<int>> itr{grid};
+
+  for (RowViewIterator<Grid<int>> itr{grid}; itr != RowViewIterator<Grid<int>>{grid, ViewIteratorEnd{}}; ++itr)
+  {
+    *itr = 5;
+  }
+
+  for (RowViewIterator<const Grid<int>> itr{grid}; itr != RowViewIterator<const Grid<int>>{grid, ViewIteratorEnd{}}; ++itr)
+  {
+    ASSERT_EQ(*itr, 5);
+  }
 }
 
 
-TEST(FixedGridDynamicView, Fill)
+TEST(Grid, RowViewIteratorEndTag)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  grid.view(Indices{1, 1}, Indices{2, 2}).fill(5);
+  RowViewIterator<Grid<int>> itr{grid};
 
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
+  for (RowViewIterator<Grid<int>> itr{grid}; itr != ViewIteratorEnd{}; ++itr)
+  {
+    *itr = 5;
+  }
+
+  for (RowViewIterator<const Grid<int>> itr{grid}; itr != ViewIteratorEnd{}; ++itr)
+  {
+    ASSERT_EQ(*itr, 5);
+  }
 }
 
 
-TEST(FixedGridDynamicView, Const)
+TEST(Grid, ViewBoundsIteration)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  grid.view(Indices{1, 1}, Indices{3, 3})[Indices{1, 1}] = 5;
+  auto view = grid.view(Bounds{Indices{2, 2}, Extents{5, 5}});
 
-  const FixedGrid<int, 20, 10> const_grid{grid};
-
-  const auto value = const_grid.view(Indices{1, 1}, Indices{3, 3})[Indices{1, 1}];
-
-  ASSERT_EQ(value, 5);
+  view.fill(5);
+  for (const auto& c : view)
+  {
+    ASSERT_EQ(c, 5);
+  }
 }
 
 
-TEST(FixedGridDynamicView, AssignElement)
+TEST(GridTraits, CellType)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid;
 
-  grid.view(Indices{1, 1}, Indices{3, 3})[Indices{1, 1}] = 5;
-
-  const auto value = grid[Indices{2, 2}];
-
-  ASSERT_EQ(value, 5);
+  ASSERT_TRUE((std::is_same<GridTraits<decltype(grid)>::cell_type, int>()));
 }
 
 
-TEST(FixedGridDynamicView, AssignGrid)
+TEST(View, FixedOriginExtentsBoundsRangeIteration)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  grid.view(Indices{1, 1}, Indices{2, 2}) = FixedGrid<int, 2, 2>{5};
+  View<Grid<int>, FixedOriginExtentsBounds<2, 2, 3, 3>> view{grid};
 
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
+  for (auto& c : view)
+  {
+    c = 5;
+  }
+
+  for (const auto& c : view)
+  {
+    ASSERT_EQ(c, 5);
+  }
+
+  for (const auto& c : View<const Grid<int>, FixedOriginExtentsBounds<5, 5, 3, 3>>{grid})
+  {
+    ASSERT_EQ(c, 1);
+  }
 }
 
 
-TEST(FixedGridDynamicView, CompoundAddGrid)
+TEST(View, FixedOriginBoundsRangeIteration)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  grid.view(Indices{1, 1}, Indices{2, 2}) += FixedGrid<int, 2, 2>{4};
+  View<Grid<int>, FixedOriginBounds<2, 2>> view{grid, FixedOriginBounds<2, 2>{Extents{3, 3}}};
 
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
+  for (auto& c : view)
+  {
+    c = 5;
+  }
+
+  for (const auto& c : view)
+  {
+    ASSERT_EQ(c, 5);
+  }
+
+  for (const auto& c : View<const Grid<int>, FixedOriginBounds<5, 5>>{grid, FixedOriginBounds<5, 5>{Extents{3, 3}}})
+  {
+    ASSERT_EQ(c, 1);
+  }
 }
 
 
-TEST(FixedGridDynamicView, Equality)
+TEST(View, FixedExtentsBoundsRangeIteration)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  grid.view(Indices{1, 1}, Indices{2, 2}) = FixedGrid<int, 2, 2>{5};
+  View<Grid<int>, FixedExtentsBounds<3, 3>> view{grid, FixedExtentsBounds<3, 3>{Indices{2, 2}}};
 
-  EXPECT_EQ((grid.view(Indices{1, 1}, Indices{2, 2})), (FixedGrid<int, 2, 2>{5}));
+  for (auto& c : view)
+  {
+    c = 5;
+  }
+
+  for (const auto& c : view)
+  {
+    ASSERT_EQ(c, 5);
+  }
+
+  for (const auto& c : View<const Grid<int>, FixedExtentsBounds<3, 3>>{grid, FixedExtentsBounds<3, 3>{Indices{5, 5}}})
+  {
+    ASSERT_EQ(c, 1);
+  }
 }
 
 
-TEST(FixedGridDynamicView, Inequality)
+TEST(View, BoundsRangeIteration)
 {
-  FixedGrid<int, 20, 10> grid{1};
+  Grid<int> grid{Extents{20, 10}, 1};
 
-  ASSERT_NE((grid.view(Indices{1, 1}, Indices{2, 2})), (FixedGrid<int, 2, 2>{5}));
+  View<Grid<int>, Bounds> view{grid, Bounds{Indices{2, 2}, Extents{3, 3}}};
+
+  for (auto& c : view)
+  {
+    c = 5;
+  }
+
+  for (const auto& c : view)
+  {
+    ASSERT_EQ(c, 5);
+  }
+
+  for (const auto& c : View<const Grid<int>, Bounds>{grid, Bounds{Indices{5, 5}, Extents{3, 3}}})
+  {
+    ASSERT_EQ(c, 1);
+  }
 }
 
 
-TEST(FixedGridFixedExentsView, Fill)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<2, 2>(Indices{1, 1}).fill(5);
-
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
-}
-
-
-TEST(FixedGridFixedExentsView, Const)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<3, 3>(Indices{1, 1})[Indices{1, 1}] = 5;
-
-  const FixedGrid<int, 20, 10> const_grid{grid};
-
-  const auto value = const_grid.view<3, 3>(Indices{1, 1})[Indices{1, 1}];
-
-  ASSERT_EQ(value, 5);
-}
-
-
-TEST(FixedGridFixedExentsView, AssignElement)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<3, 3>(Indices{1, 1})[Indices{1, 1}] = 5;
-
-  const auto value = grid[Indices{2, 2}];
-
-  ASSERT_EQ(value, 5);
-}
-
-
-TEST(FixedGridFixedExentsView, AssignGrid)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<2, 2>(Indices{1, 1}) = FixedGrid<int, 2, 2>{5};
-
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
-}
-
-
-TEST(FixedGridFixedExentsView, CompoundAddGrid)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<2, 2>(Indices{1, 1}) += FixedGrid<int, 2, 2>{4};
-
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
-}
-
-
-TEST(FixedGridFixedExentsView, Equality)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<2, 2>(Indices{1, 1}) = FixedGrid<int, 2, 2>{5};
-
-  EXPECT_EQ((grid.view<2, 2>(Indices{1, 1})), (FixedGrid<int, 2, 2>{5}));
-}
-
-
-TEST(FixedGridFixedExentsView, Inequality)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  ASSERT_NE((grid.view<2, 2>(Indices{1, 1})), (FixedGrid<int, 2, 2>{5}));
-}
-
-
-TEST(FixedGridFixedOriginExentsView, Fill)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<1, 1, 2, 2>().fill(5);
-
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
-}
-
-
-TEST(FixedGridFixedOriginExentsView, Const)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<1, 1, 3, 3>()[Indices{1, 1}] = 5;
-
-  const FixedGrid<int, 20, 10> const_grid{grid};
-
-  const auto value = const_grid.view<3, 3>(Indices{1, 1})[Indices{1, 1}];
-
-  ASSERT_EQ(value, 5);
-}
-
-
-TEST(FixedGridFixedOriginExentsView, AssignElement)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<1, 1, 3, 3>()[Indices{1, 1}] = 5;
-
-  const auto value = grid[Indices{2, 2}];
-
-  ASSERT_EQ(value, 5);
-}
-
-
-TEST(FixedGridFixedOriginExentsView, AssignGrid)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<1, 1, 2, 2>() = FixedGrid<int, 2, 2>{5};
-
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
-}
-
-
-TEST(FixedGridFixedOriginExentsView, CompoundAddGrid)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<1, 1, 2, 2>() += FixedGrid<int, 2, 2>{4};
-
-  EXPECT_EQ((grid[Indices{0, 0}]), 1);
-  EXPECT_EQ((grid[Indices{1, 1}]), 5);
-  EXPECT_EQ((grid[Indices{1, 2}]), 5);
-  EXPECT_EQ((grid[Indices{2, 1}]), 5);
-  EXPECT_EQ((grid[Indices{2, 2}]), 5);
-  EXPECT_EQ((grid[Indices{3, 3}]), 1);
-}
-
-
-TEST(FixedGridFixedOriginExentsView, Equality)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  grid.view<1, 1, 2, 2>() = FixedGrid<int, 2, 2>{5};
-
-  EXPECT_EQ((grid.view<1, 1, 2, 2>()), (FixedGrid<int, 2, 2>{5}));
-}
-
-
-TEST(FixedGridFixedOriginExentsView, Inequality)
-{
-  FixedGrid<int, 20, 10> grid{1};
-
-  ASSERT_NE((grid.view<1, 1, 2, 2>()), (FixedGrid<int, 2, 2>{5}));
-}
-
-
-TEST(MappedGrid, FromArray)
+TEST(MappedGrid, FromArrayAssignGrid)
 {
   int segment[200];
   std::fill(segment, segment+200, 1);
 
   MappedGrid<int> grid{Extents{20, 10}, segment};
 
-  grid.view<2, 2>(Indices{1, 1}) = FixedGrid<int, 2, 2>{5};
+  grid.view(FixedOriginExtentsBounds<1, 1, 2, 2>{}) = FixedGrid<int, 2, 2>{5};
 
   EXPECT_EQ((grid[Indices{0, 0}]), 1);
   EXPECT_EQ((grid[Indices{1, 1}]), 5);
@@ -392,14 +372,14 @@ TEST(MappedGrid, FromArray)
 }
 
 
-TEST(MappedFixedGrid, FromArray)
+TEST(FixedMappedGrid, FromArrayAssignGrid)
 {
   int segment[200];
   std::fill(segment, segment+200, 1);
 
-  MappedFixedGrid<int, 20, 10> grid{segment};
+  FixedMappedGrid<int, 20, 10> grid{segment};
 
-  grid.view<2, 2>(Indices{1, 1}) = FixedGrid<int, 2, 2>{5};
+  grid.view(FixedOriginExtentsBounds<1, 1, 2, 2>{}) = FixedGrid<int, 2, 2>{5};
 
   EXPECT_EQ((grid[Indices{0, 0}]), 1);
   EXPECT_EQ((grid[Indices{1, 1}]), 5);
@@ -410,7 +390,7 @@ TEST(MappedFixedGrid, FromArray)
 }
 
 
-TEST(FixedTiledGrid, DefaultValueConstructor)
+TEST(FixedTiledGrid, UniformInitialValueConstructor)
 {
   FixedTiledGrid<int, 20, 20, 10, 10> grid{5};
 
@@ -440,7 +420,7 @@ TEST(FixedTiledGrid, Assign)
 
   ASSERT_TRUE((grid.mask()[Indices{1, 1}]));
   ASSERT_TRUE((grid.mask()[Indices{3, 3}]));
-  ASSERT_EQ(grid.active(), 2);
+  ASSERT_EQ(grid.active(), 2UL);
 
   EXPECT_EQ((grid[Indices{5, 5}]), 6);
   EXPECT_EQ((grid[Indices{18, 19}]), 9);
@@ -451,7 +431,7 @@ TEST(FixedTiledGrid, AssignGrid)
 {
   FixedTiledGrid<int, 20, 20, 5, 5> grid{1};
 
-  grid.view<2, 2>(Indices{1, 1}) = FixedGrid<int, 2, 2>{5};
+  grid.view(FixedOriginExtentsBounds<1, 1, 2, 2>{}) = FixedGrid<int, 2, 2>{5};
 
   EXPECT_EQ((grid[Indices{0, 0}]), 1);
   EXPECT_EQ((grid[Indices{1, 1}]), 5);
@@ -462,17 +442,9 @@ TEST(FixedTiledGrid, AssignGrid)
 }
 
 
-TEST(FixedTiledGrid, AccessTile)
-{
-  FixedTiledGrid<int, 20, 20, 5, 5> grid{1};
-
-  grid.view<2, 2>(Indices{1, 1}) = FixedGrid<int, 2, 2>{5};
-}
-
-
-//
-// ASSIGNMENT "STRESS" TESTS
-//
+// //
+// // ASSIGNMENT "STRESS" TESTS
+// //
 
 
 TEST(Grid, AssignIterated)
@@ -499,14 +471,14 @@ TEST(FixedGrid, AssignIterated)
 
 TEST(FixedTiledGrid, AssignIterated)
 {
-  FixedTiledGrid<int, 2000, 2000, 500, 500> grid{1};
+  FixedTiledGrid<int, 2000, 2000, 50, 50> grid{1};
 
   for (auto& c : grid)
   {
     c = 2;
   }
 
-  ASSERT_EQ(grid.active(), (FixedTiledGrid<int, 2000, 2000, 500, 500>::TileCount));
+  ASSERT_EQ(grid.active(), (FixedTiledGrid<int, 2000, 2000, 50, 50>::TileCount));
 }
 
 

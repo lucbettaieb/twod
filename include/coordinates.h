@@ -20,6 +20,8 @@ struct Coordinates
   CoordT x;
   CoordT y;
 
+  constexpr Coordinates(const Coordinates&) = default;
+
   constexpr Coordinates(CoordT _x, CoordT _y) :
     x{_x},
     y{_y}
@@ -62,6 +64,11 @@ struct Coordinates
   {
     return this->x <= other.x and
            this->y <= other.y;
+  }
+
+  constexpr Coordinates abs() const
+  {
+    return Coordinates{std::abs(this->x), std::abs(this->y)};
   }
 
   constexpr int area() const
