@@ -81,6 +81,11 @@ struct Coordinates
     return Coordinates{0, 0};
   }
 
+  constexpr Coordinates operator-() const
+  {
+    return Coordinates{-this->x, -this->y};
+  }
+
   friend constexpr Coordinates operator-(const Coordinates lhs, const Coordinates rhs)
   {
     return Coordinates{lhs.x - rhs.x, lhs.y - rhs.y};
@@ -95,6 +100,12 @@ struct Coordinates
   friend constexpr Coordinates<ScalarT> operator*(const Coordinates lhs, ScalarT scale)
   {
     return Coordinates<ScalarT>{lhs.x * scale, lhs.y * scale};
+  }
+
+  template<typename ScalarT>
+  friend constexpr Coordinates<ScalarT> operator/(const Coordinates lhs, ScalarT scale)
+  {
+    return Coordinates<ScalarT>{lhs.x / scale, lhs.y / scale};
   }
 };
 
