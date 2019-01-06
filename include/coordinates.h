@@ -9,6 +9,7 @@
 #define TWOD_COORDINATES_H
 
 // C++ Standard Library
+#include <cmath>
 #include <tuple>
 
 namespace twod
@@ -25,6 +26,11 @@ struct Coordinates
   constexpr Coordinates(CoordT _x, CoordT _y) :
     x{_x},
     y{_y}
+  {}
+
+  template<typename OtherCoordT>
+  constexpr Coordinates(const Coordinates<OtherCoordT>& other) :
+    Coordinates{static_cast<CoordT>(other.x), static_cast<CoordT>(other.y)}
   {}
 
   constexpr bool operator==(const Coordinates& other) const
@@ -69,6 +75,11 @@ struct Coordinates
   constexpr Coordinates abs() const
   {
     return Coordinates{std::abs(this->x), std::abs(this->y)};
+  }
+
+  constexpr Coordinates floor() const
+  {
+    return Coordinates{std::floor(this->x), std::floor(this->y)};
   }
 
   constexpr int area() const
