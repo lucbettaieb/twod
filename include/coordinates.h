@@ -90,6 +90,12 @@ struct Coordinates
   {
     return Coordinates{lhs.x + rhs.x, lhs.y + rhs.y};
   }
+
+  template<typename ScalarT>
+  friend constexpr Coordinates<ScalarT> operator*(const Coordinates lhs, ScalarT scale)
+  {
+    return Coordinates<ScalarT>{lhs.x * scale, lhs.y * scale};
+  }
 };
 
 }  // namespace twod
