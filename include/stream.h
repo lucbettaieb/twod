@@ -10,6 +10,7 @@
 
 // C++ Standard Library
 #include <ostream>
+#include <iomanip>
 
 // TwoD
 #include <twod/fwd.h>
