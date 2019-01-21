@@ -21,6 +21,8 @@ struct Coordinates
   CoordT x;
   CoordT y;
 
+  Coordinates() = default;
+
   constexpr Coordinates(const Coordinates&) = default;
 
   constexpr Coordinates(CoordT _x, CoordT _y) :
@@ -95,6 +97,20 @@ struct Coordinates
   constexpr Coordinates operator-() const
   {
     return Coordinates{-this->x, -this->y};
+  }
+
+  inline Coordinates& operator-=(const Coordinates other)
+  {
+    this->x -= other.x;
+    this->y -= other.y;
+    return *this;
+  }
+
+  inline Coordinates& operator+=(const Coordinates other)
+  {
+    this->x += other.x;
+    this->y += other.y;
+    return *this;
   }
 
   friend constexpr Coordinates operator-(const Coordinates lhs, const Coordinates rhs)
