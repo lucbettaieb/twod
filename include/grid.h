@@ -173,6 +173,14 @@ public:
   }
 
   /**
+   * @brief Returns center point of bounds
+   */
+  constexpr Indices center() const
+  {
+    return origin() + extents() / 2;
+  }
+
+  /**
    * @brief Check if grid (effectively) contains no values
    */
   constexpr bool empty() const
@@ -292,6 +300,38 @@ public:
   inline View<Derived, ViewBoundsT> view(const ViewBoundsT& bounds)
   {
     return View<Derived, ViewBoundsT>{*derived(), bounds};
+  }
+
+  /**
+   * @brief Returns grid view of size \p extents
+   *
+   *        View is anchored at bottom left corning to parent coordinates \p origin
+   *
+   * @param bounds
+   * @return view
+   */
+  template<typename ViewBoundsT>
+  inline View<const Derived, ViewBoundsT> view(const ViewBoundsT& bounds) const
+  {
+    return View<const Derived, ViewBoundsT>{*derived(), bounds};
+  }
+
+  /**
+   * @brief Returns view for the entirety of the current grid
+   * @return view
+   */
+  inline auto view()
+  {
+    return view(bounds());
+  }
+
+  /**
+   * @brief Returns view for the entirety of the current grid
+   * @return view
+   */
+  inline auto view() const
+  {
+    return view(bounds());
   }
 
   /**
@@ -604,7 +644,7 @@ public:
    */
   inline auto* operator->()
   {
-    return this;
+    return std::addressof(this->operator*());
   }
 
   /**
@@ -612,7 +652,7 @@ public:
    */
   inline const auto* operator->() const
   {
-    return this;
+    return std::addressof(this->operator*());
   }
 
   /**
