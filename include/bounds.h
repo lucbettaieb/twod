@@ -163,6 +163,271 @@ struct FixedOriginExtentsBounds :
 {
 };
 
+
+/// End-tag object
+struct BoundsIteratorEnd {};
+
+
+/**
+ * @brief Base bounds point iterator
+ */
+template<typename Derived>
+class BoundsIteratorBase
+{
+public:
+  /**
+   * @brief Initialization constructor
+   * @param bounds  parent bounds
+   */
+  template<typename BoundsT>
+  explicit BoundsIteratorBase(const BoundsBase<BoundsT>& bounds) :
+    pt_{bounds.origin()},
+    origin_{pt_},
+    past_corner_{bounds.origin() + bounds.extents()}
+  {}
+
+  /**
+   * @brief End iterator constructor
+   * @param bounds  parent bounds
+   */
+  template<typename BoundsT>
+  explicit BoundsIteratorBase(const BoundsBase<BoundsT>& bounds,
+                              BoundsIteratorEnd _end) :
+    pt_{bounds.extents() - Indices{1, 1}},
+    origin_{pt_},
+    past_corner_{bounds.origin() + bounds.extents()}
+  {}
+
+  /**
+   * @brief Pre-increment overload
+   */
+  inline Derived& operator++()
+  {
+    return derived()->increment_impl();
+  }
+  /**
+   * @brief Post-increment overload
+   */
+  inline Derived operator++(int)
+  {
+    const Derived prev{*derived()};
+    derived()->increment_impl();
+    return prev;
+  }
+
+  /**
+   * @brief Immutable cell value dereference operator
+   */
+  inline const Indices operator*() const
+  {
+    return this->pt_;
+  }
+
+  /**
+   * @brief Equality operator
+   */
+  inline bool operator==(const Derived& other) const
+  {
+    return (this->pt_ == other.pt_);
+  }
+
+  /**
+   * @brief Inequality operator
+   */
+  inline bool operator!=(const Derived& other) const
+  {
+    return !this->operator==(other);
+  }
+
+  /**
+   * @brief Equality operator
+   */
+  inline bool operator==(BoundsIteratorEnd end) const
+  {
+    return derived()->eq_end_impl(end);
+  }
+
+  /**
+   * @brief Inequality operator
+   */
+  inline bool operator!=(BoundsIteratorEnd end) const
+  {
+    return !this->operator==(end);
+  }
+
+  /**
+   * @brief Returns indices past bounds corner point (origin + extents + (1, 1))
+   */
+  inline Indices past_corner() const
+  {
+    return past_corner_;
+  }
+
+protected:
+  /// Bounds-relative index
+  Indices pt_;
+
+  /// Bounds origin point
+  Indices origin_;
+
+  /// Bounds reset point
+  Indices past_corner_;
+
+private:
+  IMPLEMENT_CRTP_BASE_CLASS(Derived);
+};
+
+
+/**
+ * @brief Column-major bounds iterator
+ *
+ * @tparam BoundsT  parent grid type
+ */
+template<typename BoundsT>
+class ColBoundsIterator :
+  public BoundsIteratorBase<ColBoundsIterator<BoundsT>>
+{
+  using Base = BoundsIteratorBase<ColBoundsIterator<BoundsT>>;
+public:
+  using Base::Base;
+
+private:
+  /**
+   * @brief Pre-increment overload
+   */
+  inline ColBoundsIterator& increment_impl()
+  {
+    ++this->pt_.x;
+    if (this->pt_.x == this->past_corner_.x)
+    {
+      this->pt_.x = this->origin_.x;
+      ++this->pt_.y;
+    }
+    return *this;
+  }
+
+  /**
+   * @brief End tag equality check
+   */
+  inline bool eq_end_impl(BoundsIteratorEnd) const
+  {
+    return this->pt_.y == this->past_corner_.y;
+  }
+
+  friend Base;
+};
+
+
+/**
+ * @brief Row-major bounds iterator
+ *
+ * @tparam BoundsT  parent grid type
+ */
+template<typename BoundsT>
+class RowBoundsIterator :
+  public BoundsIteratorBase<RowBoundsIterator<BoundsT>>
+{
+  using Base = BoundsIteratorBase<RowBoundsIterator<BoundsT>>;
+public:
+  using Base::Base;
+
+private:
+  /**
+   * @brief Pre-increment overload
+   */
+  inline RowBoundsIterator& increment_impl()
+  {
+    ++this->pt_.y;
+    if (this->pt_.y == this->past_corner_.y)
+    {
+      this->pt_.y = this->origin_.y;
+      ++this->pt_.x;
+    }
+    return *this;
+  }
+
+  /**
+   * @brief End tag equality check
+   */
+  inline bool eq_end_impl(BoundsIteratorEnd) const
+  {
+    return this->pt_.x == this->past_corner_.x;
+  }
+
+  friend Base;
+};
+
+
+/**
+ * @brief Range helper for iterating over bounds
+ *
+ * @tparam BoundsIteratorT  bounds iterator type
+ */
+template<typename BoundsIteratorT>
+class BoundsIteratorRange
+{
+public:
+  inline const BoundsIteratorT& begin() const
+  {
+    return begin_;
+  }
+
+  static inline BoundsIteratorEnd end()
+  {
+    return BoundsIteratorEnd{};
+  }
+
+  inline const BoundsIteratorT& cbegin() const
+  {
+    return begin_;
+  }
+
+  static inline BoundsIteratorEnd cend()
+  {
+    return BoundsIteratorEnd{};
+  }
+
+private:
+  template<typename BoundsT>
+  BoundsIteratorRange(const BoundsBase<BoundsT>& bounds) :
+    begin_{bounds}
+  {}
+
+  mutable BoundsIteratorT begin_;
+
+  template<typename BoundsT>
+  friend inline BoundsIteratorRange<ColBoundsIterator<BoundsT>>
+    make_col_bounds_range(const BoundsBase<BoundsT>&);
+
+  template<typename BoundsT>
+  friend inline BoundsIteratorRange<RowBoundsIterator<BoundsT>>
+    make_row_bounds_range(const BoundsBase<BoundsT>&);
+};
+
+/**
+ * @brief Helper for makeing column bounds iterator
+ *
+ * @tparam BoundsT  parent grid type
+ */
+template<typename BoundsT>
+inline BoundsIteratorRange<ColBoundsIterator<BoundsT>>
+  make_col_bounds_range(const BoundsBase<BoundsT>& bounds)
+{
+  return BoundsIteratorRange<ColBoundsIterator<BoundsT>>{bounds};
+}
+
+/**
+ * @brief Helper for makeing row bounds iterator
+ *
+ * @tparam BoundsT  parent grid type
+ */
+template<typename BoundsT>
+inline BoundsIteratorRange<RowBoundsIterator<BoundsT>>
+  make_row_bounds_range(const BoundsBase<BoundsT>& bounds)
+{
+  return BoundsIteratorRange<RowBoundsIterator<BoundsT>>{bounds};
+}
+
 }  // namespace twod
 
 #endif // TWOD_BOUNDS_H

@@ -8,3 +8,16 @@ cc_test(
     ],
     timeout="short",
 )
+
+
+cc_test(
+    name="bounds-unit-tests",
+    srcs=["bounds.cpp"],
+    copts=["-Iexternal/googletest/googletest/include"],
+    deps=[
+        "//:grid",
+        "@googletest//:gtest",
+    ],
+    timeout="short",
+)
+
