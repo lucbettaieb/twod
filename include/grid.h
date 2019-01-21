@@ -23,13 +23,6 @@
 namespace twod
 {
 
-/// Grid access index pair
-using Indices = Coordinates<int>;
-
-/// Grid sizing
-using Extents = Coordinates<int>;
-
-
 /**
  * @brief Helper object which implements compile-time determined extent attributes which satisfy GridBase interface
  *

@@ -25,6 +25,11 @@ struct Coordinates
 
   constexpr Coordinates(const Coordinates&) = default;
 
+  constexpr Coordinates(CoordT _d) :
+    x{_d},
+    y{_d}
+  {}
+
   constexpr Coordinates(CoordT _x, CoordT _y) :
     x{_x},
     y{_y}
@@ -135,6 +140,12 @@ struct Coordinates
     return Coordinates<ScalarT>{lhs.x / scale, lhs.y / scale};
   }
 };
+
+/// Grid access index pair
+using Indices = Coordinates<int>;
+
+/// Grid sizing
+using Extents = Coordinates<int>;
 
 }  // namespace twod
 
